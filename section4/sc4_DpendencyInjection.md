@@ -64,6 +64,7 @@ class HelloController {
 
 <div style="text-align: center;"><img src = "./image/assemblr.png" width = "400" height = "100%"></div>  
   
+이렇게 다른 클래스에 필요한 의존 관계를 연결해주는 걸 Assembler라고 합니다.
 스프링 부트가 직접 의존 관계가 없는 클래스들의 오브젝트를 가져다가 서로 관계를 연결해주고  
 사용할 수 있도록 만들어주는 역할도 합니다.  
   
