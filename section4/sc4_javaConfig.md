@@ -103,10 +103,7 @@ public class HelloApplication {
   
 @Controller,@Configuration,@Component를 사용하려면  
 `GenericWebApplicationContext`를 사용할 수 없고 하위 클래스인  
-`AnnotationConfigServletWebApplicationContext`을 사용해야합니다.  
-
-
-
+`AnnotationConfigServletWebApplicationContext`을 사용해야합니다.
 
 
 
