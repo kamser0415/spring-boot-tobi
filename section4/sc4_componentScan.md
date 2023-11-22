@@ -282,5 +282,6 @@ public static void main(String[] args) {
   
 실제 스프링 부트를 생성하면 톰캣을 빈으로 등록하거나 ,디스패처 서블릿을 빈으로 등록하지 않습니다.  
 그런데 지금 코드를 보면 내부에서 직접 팩토리 매소드를 사용해서 빈을 등록하는 부분이 있습니다.  
-  
-이후 부분에서 추가적으로 알아보도록 하겠습니다.
+
+`SpringApplication.run(HelloApplication.class,args);`  
+클래스를 빈으로 사용하겠다고 @Configuration 과 @ComponontScan을 활용하여 구성 정보를 스프링 컨택스트에 전달하면 스프링 컨테이너가 내부에서 초기화하여 사용합니다.
