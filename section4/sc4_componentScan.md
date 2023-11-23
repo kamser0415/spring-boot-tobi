@@ -287,3 +287,75 @@ public static void main(String[] args) {
 스프링 부트는 스프링 컨테이너에서 사용할 빈 정보를 전달해주면 IOC와 DI를 통해서 오브젝트를 대신 관리해줍니다.  
 그런데 지금 코드는 톰캣과 디스패처 서블릿을 팩토리매소드로 사용하고 있습니다.  
 이 코드는 작성하지 않아도 원래 프로젝트에서는 동작한다는 것을 볼때에 스프링 부트가 클래스와 구성 정보를 가진 클래스를 개발자가 신경쓰지 않아도 전달한다는 것을 확인할 수 있습니다.
+
+## `@Configuration`과 `@ComponentScan`에 대해서 주저리 
++ [토비 강사님의 링크](https://www.inflearn.com/questions/1082553/configuration-%EA%B3%BC-componentscan)  
+  
+지금 코드를 보면 스프링 컨테이너에 register 매소드를 실행할 때 매개변수로 구성 정보가 담긴 클래스를 전달 했습니다.  
+`HelloApplication.class`는 `@Bean`이나 `@Component`가 없어도 `register()`를 활용하여 직접 빈으로 등록했습니다.  
+그러면 `@Configuration`이 없어도 `@ComponentScan`이 동작하기 때문에 `@Configuration`이 왜 필요한지 궁금증이 생겼습니다.  
+  
+결론부터 말씀드리면
+1. 애노테이션은 기능이 아니라 `주석`으로 생각해보자.
+2. 멀티 모듈로 나누어지고 모듈의 루트가 아닐때 해당 클래스에 대한 `설명`을 나타낸다.  
+
+자바의 애노테이션은 한국어로 `주석`을 의미합니다.
+위키백과에서 주석은 아래와 같이 설명합니다.  
+주석은 문서의 특정 지점 또는 기타 정보와 관련된 추가 정보입니다. 주석이나 설명이 포함된 메모일 수 있습니다. 주석은 때때로 책 페이지 여백에 표시됩니다.   
+  
+자바의 애노테이션도 기본적으로 주석이라 그 자체로 어떤 기능을 동작하지 않습니다.  
+```java
+public class Member {
+    @Override
+    public String toString() {
+        return //..
+    }
+}
+```  
+`@Override`처럼 동작하는 코드에 추가되어 해당 메소드에 대한 추가 정보를 나타냅니다.  
+해당 애노테이션이 없다고 하더라도 오버라이드를 못하는건 아닙니다. 이건 코드를 읽는 사람들을 위해서 상위에서 정의된 메소드를 오바라이드하는 메소드라는 일종의 코멘트를 붙인 겁니다.  
+  
+그런데 `@Configuration`,`@ComponentScan`과 같은 스프링 기술을에서 쓰는 애노테이션은 단순 각주 이상으로 런타임에 코드의 동작을 관여합니다. 
+주로 프레임워크가 참고하는 정보를 나타내죠. 그 자체로 명령을 하는건 아니지만, 메타데이터로 프레임워크가 해당 애노테이션을 발견하면 추가적인 기능을 수행하게 만드는 것입니다. 
+이렇게 런타임까지 유지되는 애노테이션은 프레임 워크의 참고할 수 있는 정보를 주는 용도로 활용됩니다.  
+  
+`@Configuration`은 우선 `@Component`를 메타 애노테이션으로 가지고 있습니다.  
+1. 자신이 스프링의 빈 오브젝트로 관리될 대상임을 각주로 표시합니다.  
+2. 프레임워크에게는 `@ComponentScan`대상이 될수 있는 정보를 표시합니다.  
+  
+스프링 부트의 관례에 따르면 `HelloApplication`은 그 자체로 스프링의 빈으로 등록되야합니다. 
+[스프링 부트-@Configuration](https://docs.spring.io/spring-framework/reference/core/beans/java/composing-configuration-classes.html#beans-java-injecting-imported-beans)  
+그래서 최소한 `@Component`가 있어야하고, 해당 클래스가 구성 정보를 가지고 있는 클래스이기 때문에 `@Bean`과 같은 팩토리 매소드를 넣기도 합니다. 그 중에서 `@Configuration`을 붙이는 것이 관례입니다. 
+이건 `@SpringBootApplication`이라는 부트가 만든 합성 애노테이션을 보면 알 수 있습니다.
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+		@Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+public @interface SpringBootApplication {}
+```
+해당 어노테이션은 하나 이상의 `@Bean` 메서드를 선언하고 **자동 구성**과 **컴포넌트 스캐닝을 트리거**하는 **구성 클래스**를 나타냅니다. 
+이는 @SpringBootConfiguration, @EnableAutoConfiguration 및 @ComponentScan을 선언하는 것과 동일한 편의성 어노테이션입니다.  
+  
+사실 애플리케이션의 부트스트래핑을 해주는 클래스를 register로 직접 등록하는 것은 아주 특별한 경우입니다. 
+부트의 xxxApplication으로 끝나는 클래스 정도 뿐이고, 기능적으로 보면 HelloApplication에 `@Configuration`을 
+붙이지 않아도 정상적으로 동작이 됩니다. 그러면 스프링 부트가 제공하는 애노테이션(`StringBootApplication`) 애노테이션이 붙은 클래스도 
+register 매서드 매개변수로 등록이 되는데 거기에는 왜 또 @Configuration이 들어가 있을까요?  
+  
+1. 주석으로 이해한다.  
+`HelloApplication`클래스는 스프링 빈으로 관리하고, 그 중에서도 구성 정보를 자바 코드로 다루는 것을 나타냅니다. 
+애플리케이션 구조 전반에 적용되는 `@ComponentScan`을 `@Controller` 웹 요청 클래스에 붙이지 않는 것처럼 자연스럽게 `@Configuration` 빈으로 정의된 클래스에
+나오게 됩니다. 그래서 스프링 부트의 애노테이션도 부트스트래핑으로 직접 등록되는 빈 클래스라고 하더라도 
+`@Configuration`을 붙이게 됩니다.
+2. 만약 HelloApplication이 모듈의 루트 클래스가 아닐 경우  
+하위 패키지에서 빈 클래스를 등록시키기 위해서 `@ComponentScan`이 붙더라도 부트의 부트스트래핑 클래스가 아니게 될 수 있습니다. 
+물론 이때도 `@Import`나 자동 구성에 의해서 등록될 수 있지만 register로 등록되는건 아닙니다. 
+1번의 부가적인 설명을 해주신거 같아요  
+  
+자바 코드로 빈을 등록하는 방식을 선택했다면, 명시적으로 빈이 되는 클래스에는 `@Component`류의 애노테이션을 붙이는 것을 권장합니다. 
+다른 개발자들이 읽을 때에 주석으로서 활용이 될 수 있기 때문입니다.  
+  
